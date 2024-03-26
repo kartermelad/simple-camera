@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View, Alert, Image } from 'react-native';
+import { Button, StyleSheet, Text, TouchableOpacity, View, Alert, Image, Share } from 'react-native';
 import { Camera } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 
@@ -20,21 +20,10 @@ export default function App() {
     if (cameraRef) {
       const photo = await cameraRef.takePictureAsync();
       setPhotos([...photos, photo.uri]);
-      Alert.alert(
-        'Save Photo',
-        'Do you want to save this photo to your gallery?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Save',
-            onPress: () => saveToGallery(photo.uri),
-          },
-        ],
-        { cancelable: false }
-      );
+      Alert.alert('Save Photo', 'Do you want to save this photo to your gallery?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress: () => saveToGallery(photo.uri) },
+      ], { cancelable: false });
     }
   }
 
@@ -44,11 +33,19 @@ export default function App() {
   }
 
   function toggleCameraType() {
-    setType((currentType) =>
-      currentType === Camera.Constants.Type.back
-        ? Camera.Constants.Type.front
-        : Camera.Constants.Type.back
-    );
+    if (type === Camera.Constants.Type.back) {
+      setType(Camera.Constants.Type.front);
+    } else {
+      setType(Camera.Constants.Type.back);
+    }
+  }
+
+  async function sharePhoto(photoUri) {
+    const shareOptions = {
+      message: 'Check out this photo!',
+      url: photoUri,
+    };
+    return Share.share(shareOptions);
   }
 
   return (
@@ -67,6 +64,12 @@ export default function App() {
         {photos.map((photoUri, index) => (
           <View key={index} style={styles.photoContainer}>
             <Image source={{ uri: photoUri }} style={styles.photo} />
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={() => sharePhoto(photoUri)}
+            >
+              <Text style={styles.shareButtonText}>Share</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => setPhotos(photos.filter((_, i) => i !== index))}
@@ -112,11 +115,23 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     margin: 10,
+    position: 'relative',
   },
   photo: {
     width: 100,
     height: 100,
     borderRadius: 10,
+  },
+  shareButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#3498db',
+    padding: 5,
+    borderRadius: 5,
+  },
+  shareButtonText: {
+    color: 'white',
   },
   deleteButton: {
     backgroundColor: 'red',
